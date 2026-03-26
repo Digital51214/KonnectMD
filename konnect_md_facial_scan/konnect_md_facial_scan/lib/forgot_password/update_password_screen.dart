@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../basic_data/text_styles.dart';
 import '../services/update_password_service.dart';
 import '../session manager/session_manager.dart';
 
@@ -166,8 +167,9 @@ class _UpdatePasswordState extends State<UpdatePassword> {
                 ],
               ),
 
-              const SizedBox(height: 54),
-
+              const SizedBox(height: 30),
+Icon(Icons.lock,size:MediaQuery.of(context).size.width*0.5,color: primaryColor),
+              const SizedBox(height: 35),
               // ── Current Password ───────────────────────────────
               _PasswordTextField(
                 hintText:   'Current Password',
@@ -176,7 +178,7 @@ class _UpdatePasswordState extends State<UpdatePassword> {
                 onToggle:   () => setState(() => _showCurrent = !_showCurrent),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 15),
 
               // ── New Password ───────────────────────────────────
               _PasswordTextField(
@@ -186,7 +188,7 @@ class _UpdatePasswordState extends State<UpdatePassword> {
                 onToggle:   () => setState(() => _showNew = !_showNew),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 15),
 
               // ── Confirm New Password ───────────────────────────
               _PasswordTextField(
@@ -262,12 +264,9 @@ class _PasswordTextField extends StatelessWidget {
       obscureText: !showText,
       decoration: InputDecoration(
         hintText:  hintText,
-        hintStyle: const TextStyle(
-          fontSize:   14,
-          fontWeight: FontWeight.w600,
-          color:      Colors.black45,
-        ),
+        hintStyle:AppTextStyles.t3.copyWith(fontSize: MediaQuery.of(context).size.width * 0.035),
         filled:         true,
+
         fillColor:      Colors.transparent,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 24,
