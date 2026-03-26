@@ -18,7 +18,9 @@ dependencies:
   percent_indicator: ^4.2.3
   pinput: ^6.0.2
   get: ^4.7.3
-  # image_picker: ^0.8.9
+  image_picker: ^1.2.1
+
+
 
 dev_dependencies:
   flutter_test:

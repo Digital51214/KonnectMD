@@ -2,11 +2,14 @@ import 'package:facial_scan_app/Bottom_Navigation_Bar/bottom_nav_screen.dart';
 import 'package:facial_scan_app/basic_data/text_field.dart';
 import 'package:facial_scan_app/basic_data/text_styles.dart';
 import 'package:facial_scan_app/forgot_password/forgot_password.dart';
+
+import 'package:facial_scan_app/services/sign_in_services.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../basic_data/app_images.dart';
 import '../basic_data/checkbox.dart';
+import '../session manager/session_manager.dart';
 import 'sign_up.dart';
 
 class Sign_In extends StatefulWidget {
@@ -17,9 +20,71 @@ class Sign_In extends StatefulWidget {
 }
 
 class _Sign_InState extends State<Sign_In> {
-  TextEditingController passwordController = TextEditingController();
+  final TextEditingController emailController    = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   bool rememberMe = false;
+  bool isLoading  = false;
+
+  // ─── Handle Sign In ──────────────────────────────────────────────
+  Future<void> handleSignIn() async {
+    final email    = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    // Validation
+    if (email.isEmpty || password.isEmpty) {
+      print('SignIn: Validation failed — empty fields');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+    print('SignIn: Loader started');
+
+    final result = await SignInServices.signIn(
+      email: email,
+      password: password,
+    );
+
+    setState(() => isLoading = false);
+    print('SignIn: Loader stopped');
+    print('SignIn: Result => $result');
+
+    if (result['success'] == true) {
+      print('SignIn: Login successful => ${result['user']['email']}');
+
+      // Session save karo
+      await SessionManager.saveSession(
+        user: result['user'],
+        expiryInDays: rememberMe ? 30 : 7,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Login successful!')),
+      );
+
+      // ─── GetX se Home ──────────────────────────────────
+      Get.offAll(() => const BottomNavScreen());
+
+    } else {
+      print('SignIn: Login failed => ${result['message']}');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Login failed')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +102,11 @@ class _Sign_InState extends State<Sign_In> {
                 SizedBox(height: h * 0.06),
 
                 /// Logo
-                Image.asset(AppImages.logo2, height: h * 0.22, width: w * 0.35),
+                Image.asset(
+                  AppImages.logo2,
+                  height: h * 0.22,
+                  width: w * 0.35,
+                ),
 
                 SizedBox(height: h * 0.02),
 
@@ -48,6 +117,7 @@ class _Sign_InState extends State<Sign_In> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
                         /// Title
                         Text('Sign In', style: AppTextStyles.t1),
 
@@ -60,12 +130,15 @@ class _Sign_InState extends State<Sign_In> {
 
                         SizedBox(height: h * 0.025),
 
-                        /// Email Field
-                        EmailTextField(hintText: 'Email Address...'),
+                        /// Email
+                        EmailTextField(
+                          hintText: 'Email Address...',
+                          controller: emailController,
+                        ),
 
                         SizedBox(height: h * 0.010),
 
-                        /// Password Field
+                        /// Password
                         PasswordTextField(
                           hintText: 'Password',
                           obscureText: true,
@@ -74,7 +147,7 @@ class _Sign_InState extends State<Sign_In> {
 
                         SizedBox(height: h * 0.015),
 
-                        /// Remember + Forgot
+                        /// Remember Me + Forgot Password
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -83,14 +156,10 @@ class _Sign_InState extends State<Sign_In> {
                                 CircularCheckbox(
                                   initialValue: rememberMe,
                                   onChanged: (val) {
-                                    setState(() {
-                                      rememberMe = val;
-                                    });
+                                    setState(() => rememberMe = val);
                                   },
                                 ),
-
                                 SizedBox(width: w * 0.02),
-
                                 Text(
                                   "Remember Me",
                                   style: GoogleFonts.poppins(
@@ -101,14 +170,12 @@ class _Sign_InState extends State<Sign_In> {
                                 ),
                               ],
                             ),
-
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ForgotPassword(), // target screen
+                                    builder: (context) => ForgotPassword(),
                                   ),
                                 );
                               },
@@ -128,29 +195,32 @@ class _Sign_InState extends State<Sign_In> {
 
                         SizedBox(height: h * 0.04),
 
-                        /// Button
+                        /// Button with Loader
                         Center(
-                          child: AppButton(
+                          child: isLoading
+                              ? const CircularProgressIndicator()
+                              : AppButton(
                             text: 'Sign In',
-                            onPressed: () {
-                              Get.offAll(() => const BottomNavScreen());
-                            },
+                            onPressed: handleSignIn,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
+
                 SizedBox(height: h * 0.1),
 
-                /// Bottom SignUp
+                /// Bottom SignUp Text
                 AuthRichText(
-                  normalText: "Don’t have an account?",
+                  normalText: "Don't have an account?",
                   actionText: "Sign Up",
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const SignUp()),
+                      MaterialPageRoute(
+                        builder: (context) => const SignUp(),
+                      ),
                     );
                   },
                 ),

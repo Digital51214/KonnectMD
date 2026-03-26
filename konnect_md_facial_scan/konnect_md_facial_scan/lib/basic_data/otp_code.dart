@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 
 class OtpField extends StatelessWidget {
-  const OtpField({super.key});
+  final ValueChanged<String>? onCompleted;
+
+  const OtpField({super.key, this.onCompleted});
 
   @override
   Widget build(BuildContext context) {
-
     final defaultPinTheme = PinTheme(
       width: 46,
       height: 48,
       decoration: BoxDecoration(
-        color: const Color(0x1A0088C9), // #0088C9 with opacity
+        color: const Color(0x1A0088C9),
         borderRadius: BorderRadius.circular(14),
       ),
       textStyle: const TextStyle(
@@ -23,8 +24,9 @@ class OtpField extends StatelessWidget {
 
     return Center(
       child: Pinput(
-        length: 6, // 6 digit OTP
+        length: 6,
         defaultPinTheme: defaultPinTheme,
+        onCompleted: onCompleted,
       ),
     );
   }

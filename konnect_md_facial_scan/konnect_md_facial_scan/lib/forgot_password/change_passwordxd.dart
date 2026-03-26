@@ -1,0 +1,196 @@
+import 'package:facial_scan_app/authentication_screen/sign_in.dart';
+import 'package:facial_scan_app/basic_data/app_images.dart';
+import 'package:facial_scan_app/basic_data/back_button.dart';
+import 'package:facial_scan_app/basic_data/text_field.dart';
+import 'package:facial_scan_app/basic_data/text_styles.dart';
+import 'package:facial_scan_app/services/reset_password_service.dart';
+import 'package:flutter/material.dart';
+
+class ChangePassword extends StatefulWidget {
+  final String email;
+  final String otp;
+
+  const ChangePassword({
+    super.key,
+    required this.email,
+    required this.otp,
+  });
+
+  @override
+  State<ChangePassword> createState() => _ChangePasswordState();
+}
+
+class _ChangePasswordState extends State<ChangePassword> {
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  // ─── Change Password ──────────────────────────────────────────────
+  Future<void> _changePassword() async {
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    // ── Validation ──
+    if (password.isEmpty || confirmPassword.isEmpty) {
+      _showSnackBar('Please fill in both fields', isError: true);
+      return;
+    }
+
+    if (password.length < 8) {
+      _showSnackBar('Password must be at least 8 characters', isError: true);
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _showSnackBar('Passwords do not match', isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await ResetPasswordService.resetPassword(
+      email: widget.email,
+      otp: widget.otp,
+      password: password,
+      passwordConfirmation: confirmPassword,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (result.success) {
+      _showSnackBar(result.message);
+
+      // Small delay so user sees success message, then go to Sign In
+      await Future.delayed(const Duration(seconds: 1));
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const Sign_In()),
+            (route) => false, // clears entire stack
+      );
+    } else {
+      _showSnackBar(result.message, isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor:
+        isError ? Colors.red.shade600 : const Color(0xFF0088C9),
+        behavior: SnackBarBehavior.floating,
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double w = MediaQuery.of(context).size.width;
+    final double h = MediaQuery.of(context).size.height;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: w * 0.05),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: h * 0.05),
+
+                // ── Back Button + Title ──
+                Row(
+                  children: [
+                    BackButtonCircle(),
+                    SizedBox(width: w * 0.05),
+                    Flexible(
+                      child: Text(
+                        'Change Password',
+                        style: AppTextStyles.t4.copyWith(fontSize: w * 0.05),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: h * 0.05),
+
+                // ── Lock Image ──
+                Center(
+                  child: Image.asset(
+                    AppImages.lock,
+                    height: h * 0.22,
+                    width: h * 0.22,
+                    alignment: Alignment.center,
+                  ),
+                ),
+
+                SizedBox(height: h * 0.03),
+
+                // ── Input Section ──
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: w * 0.02, vertical: h * 0.01),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Change Password',
+                        style: AppTextStyles.t5.copyWith(fontSize: w * 0.045),
+                      ),
+                      SizedBox(height: h * 0.015),
+
+                      // ── Password Field ──
+                      PasswordTextField(
+                        hintText: 'Password',
+                        obscureText: true,
+                        controller: _passwordController,
+                      ),
+                      SizedBox(height: h * 0.015),
+
+                      // ── Confirm Password Field ──
+                      PasswordTextField(
+                        hintText: 'Confirm Password',
+                        obscureText: true,
+                        controller: _confirmPasswordController,
+                      ),
+                      SizedBox(height: h * 0.03),
+
+                      // ── Change Button ──
+                      Center(
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                          color: Color(0xFF0088C9),
+                        )
+                            : AppButton(
+                          text: 'Change',
+                          onPressed: _changePassword,
+                        ),
+                      ),
+                      SizedBox(height: h * 0.03),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
